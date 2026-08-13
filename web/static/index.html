@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MiniQbot-Lite · Command Deck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050505;
+    --core: #0b0b0e;
+    --core-2: #0e0e12;
+    --shell: rgba(255,255,255,0.028);
+    --hair: rgba(255,255,255,0.075);
+    --hair-strong: rgba(255,255,255,0.12);
+    --ink: #f5f5f1;
+    --muted: rgba(245,245,241,0.52);
+    --faint: rgba(245,245,241,0.32);
+    --emerald: #34e5a1;
+    --violet: #8b7cff;
+    --amber: #ffb454;
+    --danger: #ff6b6b;
+    --ease: cubic-bezier(0.32, 0.72, 0, 1);
+    --font-disp: 'Space Grotesk', system-ui, sans-serif;
+    --font-body: 'Manrope', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-weight: 300;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* ── Atmosphere: fixed orbs + grain (no scroll repaints) ── */
+  .orb { position: fixed; border-radius: 50%; filter: blur(120px); pointer-events: none; z-index: 0; }
+  .orb-a { width: 46rem; height: 46rem; top: -18rem; left: -14rem; background: radial-gradient(circle, rgba(52,229,161,0.14), transparent 60%); }
+  .orb-b { width: 42rem; height: 42rem; top: 8rem; right: -16rem; background: radial-gradient(circle, rgba(139,124,255,0.13), transparent 62%); }
+  .orb-c { width: 36rem; height: 36rem; bottom: -14rem; left: 28%; background: radial-gradient(circle, rgba(52,229,161,0.07), transparent 60%); }
+
+  .grain {
+    position: fixed; inset: 0; z-index: 5; pointer-events: none; opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: 0 1.5rem; }
+
+  /* ── Fluid Island Nav ── */
+  nav {
+    margin-top: 1.5rem; margin-left: auto; margin-right: auto; width: max-content; max-width: calc(100vw - 2rem);
+    display: flex; align-items: center; gap: 1.5rem;
+    padding: 0.5rem 0.5rem 0.5rem 1.25rem; border-radius: 999px;
+    background: rgba(11,11,14,0.72); border: 1px solid var(--hair); backdrop-filter: blur(24px) saturate(1.4);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 24px 60px -30px rgba(0,0,0,0.8);
+  }
+  .brand { display: flex; align-items: center; gap: 0.75rem; text-decoration: none; color: var(--ink); }
+  .brand-mark {
+    width: 2.1rem; height: 2.1rem; border-radius: 999px; display: grid; place-items: center;
+    background: linear-gradient(135deg, rgba(52,229,161,0.16), rgba(139,124,255,0.16));
+    border: 1px solid var(--hair-strong); color: var(--emerald); font-family: var(--font-disp); font-weight: 600; font-size: 0.8rem;
+  }
+  .brand-name { font-family: var(--font-disp); font-weight: 600; font-size: 0.95rem; letter-spacing: -0.01em; }
+  .brand-sub { font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--faint); }
+  .nav-health { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.9rem; border-radius: 999px; background: rgba(255,255,255,0.04); border: 1px solid var(--hair); font-family: var(--font-mono); font-size: 0.68rem; color: var(--muted); }
+  .dot { width: 0.42rem; height: 0.42rem; border-radius: 50%; background: var(--emerald); box-shadow: 0 0 12px var(--emerald); }
+  .nav-health.offline .dot { background: var(--amber); box-shadow: 0 0 12px var(--amber); }
+
+  /* ── Hero ── */
+  .hero { padding: clamp(5rem, 12vh, 9rem) 0 clamp(3rem, 7vh, 5rem); display: grid; grid-template-columns: 1.25fr 0.75fr; gap: clamp(2rem, 5vw, 5rem); align-items: center; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.4rem 1rem; border-radius: 999px;
+    background: rgba(255,255,255,0.03); border: 1px solid var(--hair); font-size: 0.62rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--emerald); font-weight: 500; margin-bottom: 1.6rem;
+  }
+  .eyebrow::before { content: ''; width: 0.35rem; height: 0.35rem; border-radius: 50%; background: var(--emerald); box-shadow: 0 0 10px var(--emerald); }
+  h1 {
+    font-family: var(--font-disp); font-weight: 500; font-size: clamp(2.6rem, 6.4vw, 5rem); line-height: 1.02; letter-spacing: -0.035em;
+  }
+  h1 .thin { font-weight: 300; color: var(--muted); }
+  h1 .accent { color: var(--emerald); }
+  .hero-sub { margin-top: 1.6rem; max-width: 34rem; color: var(--muted); font-size: 1.02rem; }
+  .hero-actions { display: flex; gap: 0.75rem; margin-top: 2.4rem; flex-wrap: wrap; }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 0.6rem; padding: 0.85rem 1.4rem; border-radius: 999px;
+    font-family: var(--font-disp); font-weight: 500; font-size: 0.86rem; letter-spacing: 0.01em; cursor: pointer;
+    border: 1px solid var(--hair); background: rgba(255,255,255,0.035); color: var(--ink);
+    transition: transform 0.5s var(--ease), background 0.5s var(--ease), border-color 0.5s var(--ease), box-shadow 0.5s var(--ease);
+    text-decoration: none; user-select: none; white-space: nowrap;
+  }
+  .btn:hover { background: rgba(255,255,255,0.07); border-color: var(--hair-strong); transform: translateY(-1px); }
+  .btn:active { transform: scale(0.975); }
+  .btn-primary { background: var(--emerald); border-color: transparent; color: #04120c; }
+  .btn-primary:hover { background: #4befae; box-shadow: 0 12px 40px -14px rgba(52,229,161,0.55); transform: translateY(-1px); }
+  .btn-icon {
+    width: 2rem; height: 2rem; border-radius: 999px; display: grid; place-items: center; flex: none;
+    background: rgba(4,18,12,0.12); color: inherit;
+    transition: transform 0.5s var(--ease), background 0.5s var(--ease);
+  }
+  .btn-primary .btn-icon { background: rgba(4,18,12,0.14); }
+  .btn:hover .btn-icon { transform: translate(2px, -1px) scale(1.06); }
+  .btn svg { width: 0.95rem; height: 0.95rem; stroke-width: 1.6; fill: none; stroke: currentColor; }
+
+  /* ── Section heading ── */
+  .section-kicker { display: flex; align-items: center; gap: 1rem; margin: 3.5rem 0 1.8rem; }
+  .section-kicker::after { content: ''; height: 1px; flex: 1; background: linear-gradient(90deg, var(--hair), transparent); }
+  .section-kicker h2 { font-family: var(--font-disp); font-weight: 500; font-size: 1.05rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+  .section-kicker em { font-style: normal; color: var(--emerald); }
+
+  /* ── Bento grid ── */
+  .bento { display: grid; grid-template-columns: repeat(12, 1fr); gap: 1.25rem; }
+
+  /* Double-Bezel shell */
+  .bezel {
+    padding: 0.8rem; border-radius: 2rem;
+    background: var(--shell); border: 1px solid var(--hair);
+    transition: border-color 0.6s var(--ease), transform 0.6s var(--ease), box-shadow 0.6s var(--ease);
+  }
+  .core {
+    border-radius: calc(2rem - 0.4rem); background: linear-gradient(180deg, var(--core), var(--core-2));
+    border: 1px solid var(--hair); padding: 1.5rem;
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.05);
+    height: 100%; display: flex; flex-direction: column; gap: 1.1rem;
+  }
+
+  .card { grid-column: span 4; }
+  .card-xl { grid-column: span 5; grid-row: span 2; }
+  .card-lg { grid-column: span 7; }
+  .card-wide { grid-column: span 12; }
+
+  .card-title { display: flex; align-items: center; gap: 0.7rem; }
+  .card-title .glyph {
+    width: 2.2rem; height: 2.2rem; border-radius: 0.8rem; display: grid; place-items: center; flex: none;
+    background: rgba(255,255,255,0.045); border: 1px solid var(--hair); color: var(--emerald);
+  }
+  .card-title .glyph svg { width: 1.05rem; height: 1.05rem; stroke-width: 1.5; fill: none; stroke: currentColor; }
+  .card-title h3 { font-family: var(--font-disp); font-weight: 500; font-size: 1.05rem; letter-spacing: -0.01em; }
+  .card-desc { color: var(--muted); font-size: 0.86rem; }
+
+  /* Command rows inside cards */
+  .cmd-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.9rem 1rem; border-radius: 1.25rem; border: 1px solid transparent; background: rgba(255,255,255,0.02); transition: background 0.5s var(--ease), border-color 0.5s var(--ease), transform 0.5s var(--ease); }
+  .cmd-row:hover { background: rgba(255,255,255,0.05); border-color: var(--hair); transform: translateX(2px); }
+  .cmd-row-info { min-width: 0; }
+  .cmd-row-name { font-family: var(--font-disp); font-weight: 500; font-size: 0.9rem; }
+  .cmd-row-desc { font-size: 0.72rem; color: var(--faint); margin-top: 0.1rem; }
+  .cmd-run {
+    width: 2.3rem; height: 2.3rem; border-radius: 999px; border: 1px solid var(--hair); background: rgba(255,255,255,0.04);
+    color: var(--muted); display: grid; place-items: center; cursor: pointer; flex: none;
+    transition: transform 0.5s var(--ease), color 0.5s var(--ease), background 0.5s var(--ease), border-color 0.5s var(--ease);
+  }
+  .cmd-run svg { width: 0.9rem; height: 0.9rem; stroke-width: 1.7; fill: none; stroke: currentColor; }
+  .cmd-run:hover { color: var(--emerald); border-color: rgba(52,229,161,0.4); background: rgba(52,229,161,0.08); transform: scale(1.06); }
+  .cmd-run:active { transform: scale(0.92); }
+  .cmd-row.running .cmd-run { color: var(--amber); border-color: rgba(255,180,84,0.4); animation: pulse 1.2s var(--ease) infinite; }
+  .cmd-row.done .cmd-run { color: var(--emerald); }
+
+  .cmd-group { display: flex; flex-direction: column; gap: 0.55rem; }
+
+  /* Mini stat tile (hero right) */
+  .stat-orb {
+    border-radius: 2rem; padding: 0.8rem;
+    background: rgba(52,229,161,0.05); border: 1px solid rgba(52,229,161,0.18);
+    box-shadow: 0 40px 80px -50px rgba(52,229,161,0.35), inset 0 1px 1px rgba(255,255,255,0.06);
+  }
+  .stat-core { border-radius: calc(2rem - 0.4rem); background: rgba(8,9,10,0.85); border: 1px solid var(--hair); padding: 1.75rem; display: grid; gap: 1.4rem; box-shadow: inset 0 1px 1px rgba(255,255,255,0.05); }
+  .stat-kicker { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--emerald); display: flex; align-items: center; gap: 0.5rem; }
+  .stat-kicker::before { content: ''; width: 0.4rem; height: 0.4rem; border-radius: 50%; background: var(--emerald); box-shadow: 0 0 10px var(--emerald); }
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .stat b { font-family: var(--font-disp); font-weight: 500; font-size: clamp(1.6rem, 3vw, 2.1rem); letter-spacing: -0.02em; }
+  .stat span { display: block; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint); margin-top: 0.25rem; }
+  .stat-mono { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); border-top: 1px solid var(--hair); padding-top: 1rem; }
+
+  /* ── Dock + Terminal ── */
+  .dock-card { grid-column: span 12; }
+  .dock-row { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+  .field { display: flex; align-items: center; gap: 0.6rem; padding: 0.7rem 1rem; border-radius: 999px; background: rgba(255,255,255,0.035); border: 1px solid var(--hair); transition: border-color 0.5s var(--ease), box-shadow 0.5s var(--ease); }
+  .field:focus-within { border-color: rgba(52,229,161,0.45); box-shadow: 0 0 0 3px rgba(52,229,161,0.08); }
+  .field label { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--faint); }
+  .field input, .field select {
+    background: transparent; border: none; outline: none; color: var(--ink); font-family: var(--font-mono); font-size: 0.85rem; min-width: 7rem;
+  }
+  .field select { cursor: pointer; appearance: none; }
+  .field select option { background: #0b0b0e; color: var(--ink); }
+  .dock-hint { font-family: var(--font-mono); font-size: 0.7rem; color: var(--faint); }
+
+  .terminal { background: rgba(2,3,4,0.92); border-radius: calc(2rem - 0.4rem); border: 1px solid rgba(255,255,255,0.06); box-shadow: inset 0 1px 1px rgba(255,255,255,0.04); overflow: hidden; }
+  .term-bar { display: flex; align-items: center; gap: 1rem; padding: 0.9rem 1.3rem; border-bottom: 1px solid var(--hair); }
+  .term-lights { display: flex; gap: 0.45rem; }
+  .term-lights i { width: 0.55rem; height: 0.55rem; border-radius: 50%; background: rgba(255,255,255,0.08); border: 1px solid var(--hair); }
+  .term-lights i:first-child { background: rgba(52,229,161,0.7); border-color: transparent; box-shadow: 0 0 10px rgba(52,229,161,0.4); }
+  .term-title { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); flex: 1; }
+  .term-status { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint); display: flex; align-items: center; gap: 0.5rem; }
+  .term-status.running { color: var(--amber); }
+  .term-status.running::before { content: ''; width: 0.45rem; height: 0.45rem; border-radius: 50%; background: var(--amber); animation: pulse 1.1s var(--ease) infinite; }
+  .term-status.done { color: var(--emerald); }
+  .term-status.error { color: var(--danger); }
+  .term-body { height: 26rem; overflow-y: auto; padding: 1.25rem 1.3rem; font-family: var(--font-mono); font-size: 0.76rem; line-height: 1.75; color: rgba(245,245,241,0.82); scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.15) transparent; }
+  .term-body::-webkit-scrollbar { width: 6px; }
+  .term-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
+  .term-line { white-space: pre-wrap; word-break: break-word; animation: termIn 0.4s var(--ease); }
+  .term-line.blank { height: 0.6em; }
+  .term-line .t-warn { color: var(--amber); }
+  .term-line .t-err { color: var(--danger); }
+  .term-line .t-ok { color: var(--emerald); }
+  .term-line .t-dim { color: var(--faint); }
+  .term-cmd { color: var(--violet); font-weight: 500; margin-top: 0.5rem; }
+  .term-banner { color: var(--faint); font-style: italic; }
+  .term-caret { display: inline-block; width: 0.55em; height: 1.1em; background: var(--emerald); vertical-align: text-bottom; animation: blink 1s steps(2) infinite; margin-left: 2px; }
+
+  /* ── Footer ── */
+  footer { padding: 4rem 0 3rem; text-align: center; color: var(--faint); font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.08em; }
+  footer .divider { max-width: 24rem; margin: 0 auto 1.5rem; height: 1px; background: linear-gradient(90deg, transparent, var(--hair-strong), transparent); }
+
+  /* ── Reveal on scroll ── */
+  .reveal { opacity: 0; transform: translateY(42px); filter: blur(6px); transition: opacity 0.9s var(--ease), transform 0.9s var(--ease), filter 0.9s var(--ease); }
+  .reveal.in { opacity: 1; transform: none; filter: none; }
+  .stagger > * { opacity: 0; transform: translateY(30px); filter: blur(4px); transition: opacity 0.8s var(--ease), transform 0.8s var(--ease), filter 0.8s var(--ease); }
+  .stagger.in > * { opacity: 1; transform: none; filter: none; }
+
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+  @keyframes termIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+
+  /* ── V0.8 Live dashboard ── */
+  .dash-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 1rem; }
+  .dash-card { border-radius: 1.25rem; border: 1px solid var(--hair); background: rgba(255,255,255,0.02); padding: 1.1rem; }
+  .equity-card svg { width: 100%; height: 190px; display: block; }
+  .equity-empty { font-size: 0.75rem; color: var(--faint); font-family: var(--font-mono); padding: 0.6rem 0; }
+  .risk-card { display: flex; flex-direction: column; gap: 0.55rem; }
+  .risk-row { display: flex; justify-content: space-between; align-items: center; font-family: var(--font-mono); font-size: 0.72rem; padding: 0.55rem 0.8rem; border-radius: 0.8rem; background: rgba(255,255,255,0.03); border: 1px solid var(--hair); }
+  .risk-row span { color: var(--faint); text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.58rem; }
+  .risk-row b { font-weight: 500; }
+  .risk-chip { padding: 0.3rem 0.7rem; border-radius: 999px; font-weight: 500; font-size: 0.7rem; font-family: var(--font-mono); }
+  .risk-chip.up { color: var(--emerald); background: rgba(52,229,161,0.1); border: 1px solid rgba(52,229,161,0.3); }
+  .risk-chip.down { color: var(--danger); background: rgba(255,107,107,0.1); border: 1px solid rgba(255,107,107,0.3); }
+  .risk-chip.amber { color: var(--amber); background: rgba(255,180,84,0.1); border: 1px solid rgba(255,180,84,0.3); }
+  .risk-chip.violet { color: var(--violet); background: rgba(139,124,255,0.1); border: 1px solid rgba(139,124,255,0.3); }
+  .dash-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-top: 0.4rem; }
+  .dash-col h4, .dash-report h4 { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--faint); margin-bottom: 0.7rem; }
+  .dash-table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 0.72rem; }
+  .dash-table th { text-align: left; color: var(--faint); font-weight: 400; letter-spacing: 0.12em; text-transform: uppercase; font-size: 0.6rem; padding: 0.4rem 0.6rem; border-bottom: 1px solid var(--hair); }
+  .dash-table td { padding: 0.45rem 0.6rem; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .pos-up { color: var(--emerald); }
+  .pos-down { color: var(--danger); }
+  .journal-item { padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-family: var(--font-mono); font-size: 0.72rem; }
+  .journal-item:last-child { border-bottom: none; }
+  .journal-buy { color: var(--emerald); }
+  .journal-sell { color: var(--violet); }
+  .journal-dim { color: var(--faint); }
+  .dash-report pre { font-family: var(--font-mono); font-size: 0.72rem; line-height: 1.7; color: var(--muted); background: rgba(2,3,4,0.6); border: 1px solid var(--hair); border-radius: 1rem; padding: 1rem; white-space: pre-wrap; word-break: break-word; max-height: 22rem; overflow: auto; }
+  .empty { color: var(--faint); font-size: 0.75rem; font-family: var(--font-mono); padding: 0.4rem 0; }
+  .sync-toggle { display: flex; align-items: center; gap: 0.6rem; font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--faint); cursor: pointer; user-select: none; }
+  .sync-toggle input { accent-color: var(--emerald); width: 0.95rem; height: 0.95rem; cursor: pointer; }
+  @media (max-width: 900px) { .dash-grid, .dash-cols { grid-template-columns: 1fr; } }
+
+  /* ── Responsive ── */
+  @media (max-width: 1024px) {
+    .card-xl, .card-lg, .card-wide, .card { grid-column: span 12; }
+    .card-xl { grid-row: auto; }
+    .hero { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 768px) {
+    .wrap { padding: 0 1rem; }
+    .hero { padding: 4rem 0 2.5rem; }
+    .stat-grid { grid-template-columns: 1fr 1fr; }
+    .bento { gap: 0.9rem; }
+    .bezel { border-radius: 1.5rem; }
+    .core { border-radius: calc(1.5rem - 0.4rem); padding: 1.2rem; }
+    nav { width: calc(100vw - 2rem); }
+    .brand-sub { display: none; }
+    .term-body { height: 20rem; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- Atmosphere -->
+  <div class="orb orb-a"></div>
+  <div class="orb orb-b"></div>
+  <div class="orb orb-c"></div>
+  <div class="grain"></div>
+
+  <!-- Nav -->
+  <div class="wrap">
+    <nav class="reveal in" style="display:flex">
+      <a class="brand" href="/">
+        <span class="brand-mark">M</span>
+        <span>
+          <span class="brand-name">MiniQbot-Lite</span><br>
+          <span class="brand-sub">Personal Quant Terminal</span>
+        </span>
+      </a>
+      <span class="nav-health" id="health"><span class="dot"></span><span id="health-txt">CONNECTING</span></span>
+    </nav>
+
+    <!-- Hero -->
+    <header class="hero">
+      <div class="reveal in">
+        <span class="eyebrow">Command Deck · V0.8</span>
+        <h1>Run the entire<br><span class="thin">trading system from</span><br><span class="accent">one surface.</span></h1>
+        <p class="hero-sub">Every CLI command in MiniQbot-Lite — scanning, backtesting, paper trading, risk-aware daily runs, portfolio backtests — surfaced as tactile controls with live streaming output.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" data-cmd="status"><span>Run status</span><span class="btn-icon"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+          <a class="btn" data-cmd="market">Market analysis</a>
+          <a class="btn" data-cmd="trade_run">Daily run</a>
+        </div>
+      </div>
+
+      <div class="reveal in" style="transition-delay:.15s">
+        <div class="stat-orb">
+          <div class="stat-core">
+            <div class="stat-kicker">Live system telemetry</div>
+            <div class="stat-grid">
+              <div class="stat"><b id="stat-stocks">—</b><span>Stocks indexed</span></div>
+              <div class="stat"><b id="stat-klines">—</b><span>K-line records</span></div>
+              <div class="stat"><b>¥1,000</b><span>Paper capital</span></div>
+              <div class="stat"><b>4</b><span>Boards filterable</span></div>
+            </div>
+            <div class="stat-mono">init · scan · fetch · backtest · trade · daily · analyze</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Command bento -->
+    <div class="section-kicker reveal"><h2>Command <em>deck</em></h2></div>
+
+    <section class="bento" id="bento">
+
+      <!-- System / market -->
+      <article class="card-xl bezel reveal">
+        <div class="core">
+          <div class="card-title">
+            <span class="glyph"><svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 3 6-8M20 3v6h-6"/></svg></span>
+            <h3>System &amp; Market</h3>
+          </div>
+          <p class="card-desc">Health, universe and regime — the pre-flight controls.</p>
+          <div class="cmd-group">
+            <div class="cmd-row" data-cmd="status">
+              <div class="cmd-row-info"><div class="cmd-row-name">System status</div><div class="cmd-row-desc">Database, strategies, runtime</div></div>
+              <button class="cmd-run" aria-label="Run"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+            </div>
+            <div class="cmd-row" data-cmd="scan">
+              <div class="cmd-row-info"><div class="cmd-row-name">Universe scan</div><div class="cmd-row-desc">Full-market candidate screening</div></div>
+              <button class="cmd-run" aria-label="Run"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+            </div>
+            <div class="cmd-row" data-cmd="market">
+              <div class="cmd-row-info"><div class="cmd-row-name">Market analysis</div><div class="cmd-row-desc">Index regime + positioning advice</div></div>
+              <button class="cmd-run" aria-label="Run"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Symbol tools -->
+      <article class="card-lg bezel reveal" style="transition-delay:.08s">
+        <div class="core">
+          <div class="card-title">
+            <span class="glyph"><svg viewBox="0 0 24 24"><path d="M4 20h16M6 16V8m4 8V4m4 12v-6m4 6v-9"/></svg></span>
+            <h3>Single-symbol tools</h3>
+          </div>
+          <p class="card-desc">Point a ticker and pull the trigger.</p>
+          <div class="cmd-group">
+            <div class="cmd-row" data-cmd="fetch">
+              <div class="cmd-row-info"><div class="cmd-row-name">Fetch K-lines</div><div class="cmd-row-desc">Pull &amp; persist daily bars</div></div>
+              <button class="cmd-run" aria-label="Run"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+            </div>
+            <div class="cmd-row" data-cmd="signal">
+              <div class="cmd-row-info"><div class="cmd-row-name">Trend signal</div><div class="cmd-row-desc">Golden cross · RSI · volume</div></div>
+              <button class="cmd-run" aria-label="Run"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+            </div>
+            <div class="cmd-row" data-cmd="backtest">
+              <div class="cmd-row-info"><div class="cmd-row-name">Backtest</div><div class="cmd-row-desc">Historical paper simulation</div></div>
+              <button class="cmd-run" aria-label="Run"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- AI analysis -->
+      <article class="card bezel reveal" style="transition-delay:.16s">
+        <div class="core">
+          <div class="card-title">
+            <span class="glyph"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8L12 3zM19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15z"/></svg></span>
+            <h3>AI Analysis</h3>
+          </div>
+          <p class="card-desc">Machine-synthesized reads.</p>
+          <div class="cmd-group">
+            <div class="cmd-row" data-cmd="review">
+              <div class="cmd-row-info"><div class="cmd-row-name">Trade review</div><div class="cmd-row-desc">Post-mortem of a ticker</div></div>
+              <button class="cmd-run" aria-label="Run"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+            </div>
+            <div class="cmd-row" data-cmd="optimize">
+              <div class="cmd-row-info"><div class="cmd-row-name">Optimize</div><div class="cmd-row-desc">Grid-search strategy params</div></div>
+              <button class="cmd-run" aria-label="Run"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+            </div>
+            <div class="cmd-row" data-cmd="wfo">
+              <div class="cmd-row-info"><div class="cmd-row-name">Walk-forward</div><div class="cmd-row-desc">Time-split validation</div></div>
+              <button class="cmd-run" aria-label="Run"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Paper trading -->
+      <article class="card-xl bezel reveal" style="transition-delay:.24s">
+        <div class="core">
+          <div class="card-title">
+            <span class="glyph"><svg viewBox="0 0 24 24"><path d="M4 17l5-6 4 3 6-8M4 20h16"/></svg></span>
+            <h3>Paper Trading</h3>
+          </div>
+          <p class="card-desc">The ¥1,000 virtual account — buys, sells, daily runs.</p>
+          <div class="cmd-group">
+            <div class="cmd-row" data-cmd="trade">
+              <div class="cmd-row-info"><div class="cmd-row-name">Single-stock trade</div><div class="cmd-row-desc">Signal-driven virtual buy/sell</div></div>
+              <button class="cmd-run" aria-label="Run"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+            </div>
+            <div class="cmd-row" data-cmd="trade_run">
+              <div class="cmd-row-info"><div class="cmd-row-name">Daily run</div><div class="cmd-row-desc">Sell positions + scan &amp; buy</div></div>
+              <button class="cmd-run" aria-label="Run"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+            </div>
+            <div class="cmd-row" data-cmd="trade_status">
+              <div class="cmd-row-info"><div class="cmd-row-name">Account status</div><div class="cmd-row-desc">Cash, positions, PnL</div></div>
+              <button class="cmd-run" aria-label="Run"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+            </div>
+            <div class="cmd-row" data-cmd="trade_reset">
+              <div class="cmd-row-info"><div class="cmd-row-name">Reset account</div><div class="cmd-row-desc">Wipe positions &amp; journal</div></div>
+              <button class="cmd-run" aria-label="Run"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- V0.8 Automation -->
+      <article class="card bezel reveal" style="transition-delay:.32s">
+        <div class="core">
+          <div class="card-title">
+            <span class="glyph"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 3M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z"/></svg></span>
+            <h3>V0.8 Automation</h3>
+          </div>
+          <p class="card-desc">Scheduled sync, regime-aware daily runs, portfolio backtests vs 沪深300.</p>
+          <div class="cmd-group">
+            <div class="cmd-row" data-cmd="daily">
+              <div class="cmd-row-info"><div class="cmd-row-name">Daily auto-run</div><div class="cmd-row-desc">Sync · regime · risk-managed run</div></div>
+              <button class="cmd-run" aria-label="Run"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+            </div>
+            <div class="cmd-row" data-cmd="portfolio">
+              <div class="cmd-row-info"><div class="cmd-row-name">Portfolio backtest</div><div class="cmd-row-desc">Multi-symbol vs 沪深300</div></div>
+              <button class="cmd-run" aria-label="Run"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Dock -->
+      <article class="dock-card bezel reveal">
+        <div class="core" style="gap:.9rem">
+          <div class="card-title">
+            <span class="glyph"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></span>
+            <h3 id="dock-label">Command dock</h3>
+          </div>
+          <div class="dock-row">
+            <div class="field">
+              <label for="sym">Symbol</label>
+              <input id="sym" inputmode="numeric" maxlength="8" placeholder="000725" spellcheck="false">
+            </div>
+            <div class="field">
+              <label for="top">Top</label>
+              <select id="top">
+                <option value="5">5</option>
+                <option value="10" selected>10</option>
+                <option value="20">20</option>
+                <option value="30">30</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="board">Board</label>
+              <select id="board">
+                <option value="">All</option>
+                <option value="主板">主板</option>
+                <option value="科创板">科创板</option>
+                <option value="创业板">创业板</option>
+                <option value="北交所">北交所</option>
+              </select>
+            </div>
+            <label class="sync-toggle" id="sync-toggle" style="display:none">
+              <input type="checkbox" id="sync">
+              Sync first
+            </label>
+            <button class="btn btn-primary" id="run-btn" style="margin-left:auto">
+              <span>Execute</span>
+              <span class="btn-icon"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            </button>
+          </div>
+          <div class="dock-hint" id="dock-hint">Select a command above, or use the quick-launch buttons. Symbol required for ticker commands.</div>
+
+          <div class="terminal">
+            <div class="term-bar">
+              <span class="term-lights"><i></i><i></i><i></i></span>
+              <span class="term-title" id="term-title">Ready</span>
+              <span class="term-status" id="term-status">Idle</span>
+            </div>
+            <div class="term-body" id="term-body">
+              <div class="term-line term-banner">MiniQbot-Lite command deck · select a command and hit Execute.</div>
+              <div class="term-line term-banner">Streaming output will render here in real time.</div>
+              <div class="term-line"><span class="term-caret"></span></div>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- V0.8 Live dashboard -->
+    <div class="section-kicker reveal"><h2>Live <em>dashboard</em></h2></div>
+
+    <section class="bento" id="dashboard">
+      <article class="card-wide bezel reveal">
+        <div class="core">
+          <div class="card-title">
+            <span class="glyph"><svg viewBox="0 0 24 24"><path d="M4 20h16M6 16V8m4 8V4m4 12v-6m4 6v-9"/></svg></span>
+            <h3>Account telemetry</h3>
+          </div>
+          <p class="card-desc">Equity curve, portfolio risk, open positions and the latest daily report — refreshed after every run.</p>
+
+          <div class="dash-grid">
+            <div class="dash-card equity-card">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:.6rem">
+                <h4 style="font-family:var(--font-mono);font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)">Equity curve · last 120 points</h4>
+                <b id="dash-money" style="font-family:var(--font-mono);font-weight:500;font-size:1rem;color:var(--emerald)">—</b>
+              </div>
+              <svg id="dash-equity" viewBox="0 0 600 180" preserveAspectRatio="none"></svg>
+              <div class="equity-empty" id="dash-equity-empty">No equity history yet — run <b>Daily auto-run</b> or a trade daily run to start tracking.</div>
+            </div>
+            <div class="dash-card risk-card" id="dash-risk">
+              <h4 style="font-family:var(--font-mono);font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin-bottom:.2rem">Risk snapshot</h4>
+              <div class="empty" id="dash-risk-empty">No risk data — run a daily run first.</div>
+            </div>
+          </div>
+
+          <div class="dash-cols">
+            <div class="dash-col">
+              <h4>Open positions</h4>
+              <div id="dash-positions"><div class="empty">No open positions.</div></div>
+            </div>
+            <div class="dash-col">
+              <h4>Recent journal</h4>
+              <div id="dash-journal"><div class="empty">No trades recorded yet.</div></div>
+            </div>
+          </div>
+
+          <div class="dash-report">
+            <h4>Latest daily report</h4>
+            <div id="dash-report"><div class="empty">No report found — run <b>Daily auto-run</b>.</div></div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <footer>
+      <div class="divider"></div>
+      <span>MINIQBOT-LITE · EDUCATIONAL PAPER TRADING · NOT FINANCIAL ADVICE</span>
+    </footer>
+  </div>
+
+<script>
+(function () {
+  "use strict";
+
+  const $ = (s, el) => (el || document).querySelector(s);
+  const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
+
+  const symInput = $("#sym");
+  const topSelect = $("#top");
+  const boardSelect = $("#board");
+  const runBtn = $("#run-btn");
+  const termBody = $("#term-body");
+  const termTitle = $("#term-title");
+  const termStatus = $("#term-status");
+  const dockHint = $("#dock-hint");
+  const dockLabel = $("#dock-label");
+
+  const NEEDS_SYMBOL = { fetch:1, signal:1, backtest:1, review:1, optimize:1, wfo:1, trade:1 };
+  const LABELS = {
+    status:"System status", scan:"Universe scan", market:"Market analysis",
+    fetch:"Fetch K-lines", signal:"Trend signal", backtest:"Backtest",
+    review:"Trade review", optimize:"Optimize", wfo:"Walk-forward",
+    trade:"Single-stock trade", trade_run:"Daily run", trade_status:"Account status", trade_reset:"Reset account",
+    daily:"Daily auto-run", portfolio:"Portfolio backtest",
+  };
+
+  let running = false;
+  let busyRow = null;
+
+  // ── Reveal on scroll (IntersectionObserver only) ──
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (e.isIntersecting) {
+        e.target.classList.add("in");
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.08, rootMargin: "0px 0px -40px 0px" });
+  $$(".reveal").forEach((el) => io.observe(el));
+
+  // ── Health telemetry ──
+  async function health() {
+    try {
+      const r = await fetch("/api/health");
+      const d = await r.json();
+      $("#stat-stocks").textContent = d.stocks ? d.stocks.toLocaleString() : "—";
+      $("#stat-klines").textContent = d.klines ? d.klines.toLocaleString() : "—";
+      $("#health-txt").textContent = d.ok ? "ONLINE" : "PARTIAL";
+      $("#health").classList.toggle("offline", !d.ok);
+    } catch (err) {
+      $("#health-txt").textContent = "OFFLINE";
+      $("#health").classList.add("offline");
+    }
+  }
+  health();
+  setInterval(health, 30000);
+
+  // ── V0.8 Dashboard ──
+  function fmtMoney(v) {
+    return (v === null || v === undefined) ? "—" : Number(v).toLocaleString("zh-CN", { maximumFractionDigits: 2 }) + " ¥";
+  }
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+  }
+  function renderEquity(series) {
+    const svg = $("#dash-equity");
+    const empty = $("#dash-equity-empty");
+    if (!series || series.length < 2) {
+      svg.innerHTML = "";
+      empty.style.display = "block";
+      return;
+    }
+    empty.style.display = "none";
+    const W = 600, H = 180, PAD = 10;
+    const ys = series.map((p) => +p.equity);
+    const minY = Math.min.apply(null, ys), maxY = Math.max.apply(null, ys);
+    const rangeY = Math.max(1, maxY - minY);
+    const px = (i) => PAD + (i / Math.max(1, series.length - 1)) * (W - PAD * 2);
+    const py = (y) => H - PAD - ((y - minY) / rangeY) * (H - PAD * 2);
+    const path = ys.map((y, i) => (i ? "L" : "M") + px(i).toFixed(1) + "," + py(y).toFixed(1)).join(" ");
+    const up = ys[ys.length - 1] >= ys[0];
+    const color = up ? "#34e5a1" : "#ff6b6b";
+    const area = path + " L" + (W - PAD).toFixed(1) + "," + (H - PAD) + " L" + PAD + "," + (H - PAD) + " Z";
+    svg.innerHTML =
+      '<defs><linearGradient id="eqfade" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0%" stop-color="' + color + '" stop-opacity="0.25"/>' +
+      '<stop offset="100%" stop-color="' + color + '" stop-opacity="0"/>' +
+      '</linearGradient></defs>' +
+      '<path d="' + area + '" fill="url(#eqfade)"/>' +
+      '<path d="' + path + '" fill="none" stroke="' + color + '" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>' +
+      '<circle cx="' + px(series.length - 1).toFixed(1) + '" cy="' + py(ys[ys.length - 1]).toFixed(1) + '" r="3.2" fill="' + color + '"/>';
+    svg.setAttribute("aria-label", "equity curve from " + series[0].date + " to " + series[series.length - 1].date);
+  }
+  function renderRisk(risk) {
+    const el = $("#dash-risk");
+    const empty = $("#dash-risk-empty");
+    if (!risk) { el.innerHTML = '<h4 style="font-family:var(--font-mono);font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin-bottom:.2rem">Risk snapshot</h4><div class="empty">No risk data — run a daily run first.</div>'; return; }
+    empty.style.display = "none";
+    const can = risk.can_buy;
+    const buyChip = '<span class="risk-chip ' + (can ? "up" : "down") + '">' + (can ? "CAN BUY" : "HALTED") + "</span>";
+    const dd = risk.drawdown;
+    const ddChip = '<span class="risk-chip ' + (dd <= risk.max_drawdown_halt ? "up" : "down") + '">' + dd.toFixed(2) + "%</span>";
+    const regimeChip = '<span class="risk-chip violet">' + esc(risk.regime_label || risk.regime || "unknown") + "</span>";
+    el.innerHTML =
+      '<h4 style="font-family:var(--font-mono);font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin-bottom:.2rem">Risk snapshot</h4>' +
+      '<div class="risk-row"><span>Regime</span>' + regimeChip + "</div>" +
+      '<div class="risk-row"><span>Position scale</span><b>' + (risk.position_scale * 100).toFixed(0) + "%</b></div>" +
+      '<div class="risk-row"><span>Drawdown</span>' + ddChip + "</div>" +
+      '<div class="risk-row"><span>Trade gate</span>' + buyChip + "</div>" +
+      '<div class="risk-row"><span>Consecutive losses</span><b>' + risk.consecutive_losses + "/" + risk.consecutive_loss_limit + "</b></div>" +
+      '<div class="risk-row"><span>Last run</span><b>' + esc(risk.last_run_date || "—") + "</b></div>" +
+      (risk.halted_since ? '<div class="risk-row"><span>Halted since</span><b>' + esc(risk.halted_since) + "</b></div>" : "") +
+      (risk.cooldown_until ? '<div class="risk-row"><span>Cooldown until</span><b>' + esc(risk.cooldown_until) + "</b></div>" : "") +
+      '<div class="risk-row" style="color:var(--faint);font-size:.62rem">' + esc(risk.can_buy_reason || "") + "</div>";
+  }
+  function renderPositions(snap) {
+    const el = $("#dash-positions");
+    const pos = snap && snap.positions ? snap.positions : [];
+    if (!pos.length) { el.innerHTML = '<div class="empty">No open positions.</div>'; return; }
+    const rows = pos.map((p) => {
+      const cls = p.pnl >= 0 ? "pos-up" : "pos-down";
+      return "<tr><td>" + esc(p.symbol) + "</td><td>" + p.shares + "</td><td>" + p.avg_cost.toFixed(3) +
+        "</td><td>" + p.current_price.toFixed(2) + "</td><td>" + p.market_value.toFixed(2) +
+        '</td><td class="' + cls + '">' + (p.pnl >= 0 ? "+" : "") + p.pnl.toFixed(2) + " (" + (p.pnl >= 0 ? "+" : "") + p.pnl_pct + "%)</td></tr>";
+    }).join("");
+    el.innerHTML =
+      "<div style='overflow-x:auto'><table class='dash-table'><thead><tr><th>Symbol</th><th>Shares</th><th>Cost</th><th>Price</th><th>Value</th><th>PnL</th></tr></thead><tbody>" +
+      rows + "</tbody></table></div>";
+  }
+  function renderJournal(records) {
+    const el = $("#dash-journal");
+    if (!records || !records.length) { el.innerHTML = '<div class="empty">No trades recorded yet.</div>'; return; }
+    const items = records.map((r) => {
+      const cls = r.action === "BUY" ? "journal-buy" : "journal-sell";
+      const sign = r.pnl !== undefined && r.pnl !== null ? ' <span class="journal-dim">pnl ' + (r.pnl >= 0 ? "+" : "") + r.pnl.toFixed(2) + "</span>" : "";
+      return '<div class="journal-item"><b class="' + cls + '">' + esc(r.action) + "</b> " + esc(r.symbol) +
+        " · " + esc(r.shares || "") + " · " + fmtMoney(r.price) + " · " + esc(r.date || "") + sign + "</div>";
+    }).join("");
+    el.innerHTML = items;
+  }
+  function renderReport(report) {
+    const el = $("#dash-report");
+    if (!report) { el.innerHTML = '<div class="empty">No report found — run <b>Daily auto-run</b>.</div>'; return; }
+    el.innerHTML = "<pre>" + esc(report) + "</pre>";
+  }
+  async function dashboard() {
+    try {
+      const r = await fetch("/api/dashboard");
+      const d = await r.json();
+      if (!d.ok) throw new Error(d.error || "bad dashboard payload");
+      const snap = d.snapshot || {};
+      const money = document.getElementById("dash-money");
+      if (money) money.textContent = fmtMoney(snap.total_equity);
+      renderEquity(d.equity_history);
+      renderRisk(d.risk);
+      renderPositions(snap);
+      renderJournal(d.journal);
+      const reportDate = d.report_date;
+      if (reportDate) {
+        const rr = await fetch("/api/report?date=" + encodeURIComponent(reportDate));
+        const rd = await rr.json();
+        renderReport(rd.ok ? rd.text : "");
+      } else {
+        renderReport(null);
+      }
+    } catch (err) {
+      $("#dash-equity-empty").style.display = "block";
+      $("#dash-equity-empty").textContent = "Dashboard unavailable: " + err.message;
+    }
+  }
+  dashboard();
+  setInterval(dashboard, 60000);
+
+  // ── Terminal ──
+  function printLine(raw) {
+    const el = document.createElement("div");
+    el.className = "term-line";
+    el.textContent = raw || " ";
+    if (!raw) el.classList.add("blank");
+    else if (/ERROR|失败|异常/.test(raw)) el.classList.add("t-err");
+    else if (/WARNING|警告/.test(raw)) el.classList.add("t-warn");
+    else if (/✅|完成|BUY|SELL|盈利/.test(raw)) el.classList.add("t-ok");
+    termBody.appendChild(el);
+    while (termBody.childNodes.length > 400) termBody.removeChild(termBody.firstChild);
+    termBody.scrollTop = termBody.scrollHeight;
+  }
+  function printCmd(txt) {
+    const el = document.createElement("div");
+    el.className = "term-line term-cmd";
+    el.textContent = "→ " + txt;
+    termBody.appendChild(el);
+    termBody.scrollTop = termBody.scrollHeight;
+  }
+  function clearTerminal() {
+    termBody.innerHTML = "";
+  }
+
+  // ── Command selection ──
+  function selectCommand(cmd, sourceRow) {
+    $$(".cmd-row").forEach((r) => r.classList.remove("active"));
+    if (sourceRow) sourceRow.classList.add("active");
+    dockLabel.textContent = LABELS[cmd] || cmd;
+    const needsSym = !!NEEDS_SYMBOL[cmd];
+    const syncToggle = $("#sync-toggle");
+    syncToggle.style.display = cmd === "daily" ? "flex" : "none";
+    dockHint.textContent = needsSym
+      ? "This command requires a ticker — enter a symbol above, then Execute."
+      : "Ready — hit Execute to stream this command.";
+    if (needsSym) symInput.focus();
+    else symInput.blur();
+  }
+
+  // Row buttons
+  $$(".cmd-row").forEach((row) => {
+    const cmd = row.dataset.cmd;
+    const btn = $(".cmd-run", row);
+    const fire = (e) => {
+      e.stopPropagation();
+      selectCommand(cmd, row);
+      run(cmd, row);
+    };
+    btn.addEventListener("click", fire);
+    row.addEventListener("click", () => selectCommand(cmd, row));
+  });
+  $$(".btn[data-cmd]").forEach((a) => a.addEventListener("click", (e) => {
+    e.preventDefault();
+    selectCommand(a.dataset.cmd, null);
+    run(a.dataset.cmd, null);
+  }));
+
+  // Enter in symbol field runs the last-selected command
+  symInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      const active = $(".cmd-row.active");
+      run(active ? active.dataset.cmd : "status", active);
+    }
+  });
+
+  // ── Run ──
+  async function run(cmd, row) {
+    if (running) return;
+    const needsSym = !!NEEDS_SYMBOL[cmd];
+    let symbol = symInput.value.trim();
+    if (needsSym && !/^\d{6}$/.test(symbol)) {
+      dockHint.textContent = "⚠ Ticker required (6 digits) — e.g. 000725";
+      symInput.focus();
+      return;
+    }
+    if (cmd === "trade_reset" && !confirm("Reset the paper account? Positions and journal will be wiped.")) return;
+
+    running = true;
+    runBtn.disabled = true;
+    runBtn.style.opacity = 0.55;
+    busyRow = row;
+    if (busyRow) busyRow.classList.add("running");
+    clearTerminal();
+    termStatus.className = "term-status running";
+    termStatus.textContent = "Running";
+    termTitle.textContent = LABELS[cmd];
+    printCmd("$ python main.py " + cmd);
+
+    const payload = { command: cmd, symbol, top: parseInt(topSelect.value, 10) || 10, board: boardSelect.value, sync: !!$("#sync").checked };
+    try {
+      const res = await fetch("/api/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok || !res.body) {
+        const err = await res.text().catch(() => res.statusText);
+        printLine("HTTP " + res.status + ": " + err);
+        finish(new Error("bad response"), null);
+        return;
+      }
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = "";
+      let exitCode = null;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let idx;
+        while ((idx = buf.indexOf("\n\n")) >= 0) {
+          const chunk = buf.slice(0, idx);
+          buf = buf.slice(idx + 2);
+          const ev = (chunk.match(/^event:\s*(\S+)/m) || [])[1];
+          const da = (chunk.match(/^data:\s*(.+)$/m) || [])[1];
+          if (!da) continue;
+          let obj;
+          try { obj = JSON.parse(da); } catch (_) { continue; }
+          if (ev === "line") printLine(obj.text);
+          else if (ev === "done") exitCode = obj.exit_code;
+        }
+      }
+      finish(exitCode === 0 ? null : new Error("exit " + exitCode), exitCode);
+    } catch (err) {
+      printLine("Connection error: " + err.message);
+      finish(err, null);
+    }
+
+    function finish(err, code) {
+      running = false;
+      runBtn.disabled = false;
+      runBtn.style.opacity = 1;
+      if (busyRow) {
+        busyRow.classList.remove("running");
+        busyRow.classList.add("done");
+        busyRow = null;
+      }
+      if (err) {
+        termStatus.className = "term-status error";
+        termStatus.textContent = code !== null ? "Exit " + code : "Error";
+      } else {
+        termStatus.className = "term-status done";
+        termStatus.textContent = "Done";
+      }
+      const caret = document.createElement("div");
+      caret.className = "term-line";
+      caret.innerHTML = '<span class="term-caret"></span>';
+      termBody.appendChild(caret);
+      termBody.scrollTop = termBody.scrollHeight;
+      health();
+      dashboard();
+    }
+  }
+
+  // Expose for debugging
+  window.__run = run;
+})();
+</script>
+</body>
+</html>

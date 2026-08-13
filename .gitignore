@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# 虚拟环境
+venv/
+.venv/
+
+# 数据库（运行中自动生成）
+storage/mini_qbot.db
+
+# 模拟交易状态（运行中自动生成）
+storage/paper_account.json
+
+# 日志
+logs/*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 测试
+.pytest_cache/
+
+# 图表输出
+charts/*.png
+
+# 每日运行报告（运行中自动生成）
+reports/*.txt
