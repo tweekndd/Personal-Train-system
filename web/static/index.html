@@ -324,7 +324,7 @@
               <div class="stat"><b id="stat-stocks">—</b><span>Stocks indexed</span></div>
               <div class="stat"><b id="stat-klines">—</b><span>K-line records</span></div>
               <div class="stat"><b>¥1,000</b><span>Paper capital</span></div>
-              <div class="stat"><b>4</b><span>Boards filterable</span></div>
+              <div class="stat"><b>5</b><span>Filterable types</span></div>
             </div>
             <div class="stat-mono">init · scan · fetch · backtest · trade · daily · analyze</div>
           </div>
@@ -352,6 +352,10 @@
             </div>
             <div class="cmd-row" data-cmd="scan">
               <div class="cmd-row-info"><div class="cmd-row-name">Universe scan</div><div class="cmd-row-desc">Full-market candidate screening</div></div>
+              <button class="cmd-run" aria-label="Run"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+            </div>
+            <div class="cmd-row" data-cmd="scan_etf">
+              <div class="cmd-row-info"><div class="cmd-row-name">ETF scan</div><div class="cmd-row-desc">Low-price high-liquidity ETF screening</div></div>
               <button class="cmd-run" aria-label="Run"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
             </div>
             <div class="cmd-row" data-cmd="market">
@@ -429,6 +433,10 @@
               <div class="cmd-row-info"><div class="cmd-row-name">Daily run</div><div class="cmd-row-desc">Sell positions + scan &amp; buy</div></div>
               <button class="cmd-run" aria-label="Run"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
             </div>
+            <div class="cmd-row" data-cmd="trade_run_etf">
+              <div class="cmd-row-info"><div class="cmd-row-name">ETF daily run</div><div class="cmd-row-desc">ETF-only sell + scan &amp; buy</div></div>
+              <button class="cmd-run" aria-label="Run"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+            </div>
             <div class="cmd-row" data-cmd="trade_status">
               <div class="cmd-row-info"><div class="cmd-row-name">Account status</div><div class="cmd-row-desc">Cash, positions, PnL</div></div>
               <button class="cmd-run" aria-label="Run"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
@@ -452,6 +460,10 @@
           <div class="cmd-group">
             <div class="cmd-row" data-cmd="daily">
               <div class="cmd-row-info"><div class="cmd-row-name">Daily auto-run</div><div class="cmd-row-desc">Sync · regime · risk-managed run</div></div>
+              <button class="cmd-run" aria-label="Run"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+            </div>
+            <div class="cmd-row" data-cmd="daily_etf">
+              <div class="cmd-row-info"><div class="cmd-row-name">ETF daily run</div><div class="cmd-row-desc">ETF-only regime-aware daily run</div></div>
               <button class="cmd-run" aria-label="Run"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
             </div>
             <div class="cmd-row" data-cmd="portfolio">
@@ -491,6 +503,7 @@
                 <option value="科创板">科创板</option>
                 <option value="创业板">创业板</option>
                 <option value="北交所">北交所</option>
+                <option value="ETF">ETF</option>
               </select>
             </div>
             <label class="sync-toggle" id="sync-toggle" style="display:none">
@@ -591,11 +604,12 @@
 
   const NEEDS_SYMBOL = { fetch:1, signal:1, backtest:1, review:1, optimize:1, wfo:1, trade:1 };
   const LABELS = {
-    status:"System status", scan:"Universe scan", market:"Market analysis",
+    status:"System status", scan:"Universe scan", scan_etf:"ETF scan", market:"Market analysis",
     fetch:"Fetch K-lines", signal:"Trend signal", backtest:"Backtest",
     review:"Trade review", optimize:"Optimize", wfo:"Walk-forward",
-    trade:"Single-stock trade", trade_run:"Daily run", trade_status:"Account status", trade_reset:"Reset account",
-    daily:"Daily auto-run", portfolio:"Portfolio backtest",
+    trade:"Single-stock trade", trade_run:"Daily run", trade_run_etf:"ETF daily run",
+    trade_status:"Account status", trade_reset:"Reset account",
+    daily:"Daily auto-run", daily_etf:"ETF daily run", portfolio:"Portfolio backtest",
   };
 
   let running = false;
@@ -776,7 +790,7 @@
     dockLabel.textContent = LABELS[cmd] || cmd;
     const needsSym = !!NEEDS_SYMBOL[cmd];
     const syncToggle = $("#sync-toggle");
-    syncToggle.style.display = cmd === "daily" ? "flex" : "none";
+    syncToggle.style.display = (cmd === "daily" || cmd === "daily_etf") ? "flex" : "none";
     dockHint.textContent = needsSym
       ? "This command requires a ticker — enter a symbol above, then Execute."
       : "Ready — hit Execute to stream this command.";
