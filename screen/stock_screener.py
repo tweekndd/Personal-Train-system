@@ -27,7 +27,7 @@ class StockScreener:
 
     @staticmethod
     def _fetch_market_data() -> pd.DataFrame:
-        """容错获取市场行情数据"""
+        """容错获取市场行情数据（A股股票）"""
         for api_name, api_fn in [
             ("stock_zh_a_spot_em", lambda: ak.stock_zh_a_spot_em()),
             ("stock_zh_a_spot", lambda: ak.stock_zh_a_spot()),
@@ -41,6 +41,24 @@ class StockScreener:
                 logger.warning(f"[{api_name}] 失败: {e}")
                 continue
         logger.error("所有行情源均失败")
+        return pd.DataFrame()
+
+    @staticmethod
+    def _fetch_etf_data() -> pd.DataFrame:
+        """获取 ETF 实时行情数据"""
+        for api_name, api_fn in [
+            ("fund_etf_spot_em", lambda: ak.fund_etf_spot_em()),
+            ("fund_etf_spot_ths", lambda: ak.fund_etf_spot_ths()),
+        ]:
+            try:
+                df = api_fn()
+                if df is not None and not df.empty:
+                    logger.info(f"[{api_name}] 获取 ETF 行情: {len(df)} 只 ETF")
+                    return df
+            except Exception as e:
+                logger.warning(f"[{api_name}] 失败: {e}")
+                continue
+        logger.error("所有 ETF 行情源均失败")
         return pd.DataFrame()
 
     def scan_all(self, price_low=None, price_high=None, board: Optional[str] = None) -> pd.DataFrame:
@@ -67,7 +85,10 @@ class StockScreener:
                     (f"，类型 {board}" if board else ""))
 
         # 使用容错数据获取
-        df = self._fetch_market_data()
+        if is_etf_mode:
+            df = self._fetch_etf_data()
+        else:
+            df = self._fetch_market_data()
         if df.empty:
             return pd.DataFrame()
 
