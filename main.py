@@ -35,7 +35,7 @@ from data import DataFetcher
 from database import DatabaseManager
 from screen import StockScreener
 from signals import SignalEngine
-from strategy import TrendStrategy, RotationStrategy
+from strategy import TrendStrategy, RotationStrategy, ETFRotationStrategy
 from backtest import BacktestEngine, PerformanceReport, PortfolioBacktest
 from trading import PaperTrader
 from analysis import MarketAnalyzer, TradeReview, StrategyAdvisor
@@ -284,7 +284,21 @@ def cmd_strategy_scan(args):
     """全市场运行策略，输出候选信号"""
     logger.info("🔍 全市场策略扫描...")
 
-    # 运行轮动策略
+    # ETF 模式：运行 ETF 轮动策略
+    if args.board == "ETF":
+        etf_strategy = ETFRotationStrategy()
+        df = etf_strategy.scan()
+
+        if df.empty:
+            print("\n❌ 未获取到 ETF 数据（当前服务器网络限制）")
+            print("   建议在本地环境运行")
+            return
+
+        print(f"\n🏆 {etf_strategy.name} 扫描结果:\n")
+        print(etf_strategy.format_candidates(df))
+        return
+
+    # 默认模式：运行轮动策略
     rotation = RotationStrategy()
     df = rotation.scan()
 
@@ -675,6 +689,7 @@ def main():
   python main.py init                     # 初始化数据库 + 同步股票列表
   python main.py scan -t 10               # 扫描候选股票
   python main.py scan -b 创业板 -t 10     # 按板块扫描（主板/科创板/创业板/北交所）
+  python main.py scan -b ETF -t 10        # 扫描 ETF
   python main.py fetch -s 000001          # 获取个股K线
   python main.py status                   # 系统状态
   python main.py run                      # 完整运行
@@ -683,6 +698,7 @@ def main():
   python main.py strategy signal -s 000001   # 个股趋势信号
   python main.py strategy scan               # 全市场轮动扫描
   python main.py strategy scan -s 000001     # 轮动扫描 + 个股分析
+  python main.py strategy scan -b ETF        # ETF 轮动扫描
   python main.py strategy list               # 列出所有策略
 
 回测命令 (V0.3):
@@ -709,8 +725,8 @@ def main():
     parser.add_argument("sub_command", nargs="?", help="strategy: signal|scan|list | backtest: list|portfolio | trade: status|reset|run | analyze: market|review|optimize")
     parser.add_argument("-s", "--symbol", help="股票代码（多个用逗号分隔，如 000725,000001）")
     parser.add_argument("-t", "--top", type=int, default=10, help="显示前N只")
-    parser.add_argument("-b", "--board", choices=["主板", "科创板", "创业板", "北交所"],
-                        help="按板块过滤: 主板/科创板/创业板/北交所")
+    parser.add_argument("-b", "--board", choices=["主板", "科创板", "创业板", "北交所", "ETF"],
+                        help="按类型过滤: 主板/科创板/创业板/北交所/ETF")
     parser.add_argument("-p", "--positions", dest="top_positions", type=int, default=2,
                         help="组合回测最大持仓数 (默认2)")
     parser.add_argument("--sync", action="store_true", help="daily: 运行前增量同步K线")

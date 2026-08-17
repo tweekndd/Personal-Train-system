@@ -27,7 +27,7 @@ class RunRequest(BaseModel):
     command: str = Field(..., description="命令名")
     symbol: str = Field("", description="股票代码，如 000725")
     top: int = Field(10, ge=1, le=50, description="扫描数量")
-    board: str = Field("", description="板块: 主板/科创板/创业板/北交所")
+    board: str = Field("", description="板块: 主板/科创板/创业板/北交所/ETF")
     sync: bool = Field(False, description="daily: 是否先增量同步K线")
 
 
@@ -44,6 +44,11 @@ COMMANDS: dict[str, dict] = {
     "scan": {
         "label": "全市场扫描",
         "tokens": ["scan", "-t", "{top}", "-b", "{board}"],
+        "needs_symbol": False,
+    },
+    "scan_etf": {
+        "label": "ETF扫描",
+        "tokens": ["scan", "-t", "{top}", "-b", "ETF"],
         "needs_symbol": False,
     },
     "fetch": {
@@ -91,6 +96,11 @@ COMMANDS: dict[str, dict] = {
         "tokens": ["trade", "run", "-t", "{top}", "-b", "{board}"],
         "needs_symbol": False,
     },
+    "trade_run_etf": {
+        "label": "ETF日运行",
+        "tokens": ["trade", "run", "-t", "{top}", "-b", "ETF"],
+        "needs_symbol": False,
+    },
     "trade_status": {
         "label": "账户状态",
         "tokens": ["trade", "status"],
@@ -104,6 +114,11 @@ COMMANDS: dict[str, dict] = {
     "daily": {
         "label": "每日自动运行",
         "tokens": ["daily", "-t", "{top}", "-b", "{board}", "{sync}"],
+        "needs_symbol": False,
+    },
+    "daily_etf": {
+        "label": "ETF每日运行",
+        "tokens": ["daily", "-t", "{top}", "-b", "ETF", "{sync}"],
         "needs_symbol": False,
     },
     "portfolio": {
@@ -129,7 +144,7 @@ def _safe_symbol(symbol: str) -> str:
 def _build_argv(cmd: dict, req: RunRequest) -> list[str]:
     symbol = _safe_symbol(req.symbol) if cmd.get("needs_symbol") else ""
     board = req.board.strip()
-    if board and board not in ("主板", "科创板", "创业板", "北交所"):
+    if board and board not in ("主板", "科创板", "创业板", "北交所", "ETF"):
         raise HTTPException(400, f"非法板块: {board}")
     top = str(max(1, min(req.top, 50)))
     tokens: list[str] = []

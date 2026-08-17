@@ -10,8 +10,11 @@ import akshare as ak
 import pandas as pd
 from loguru import logger
 
-from config import EXCLUDE_KEYWORDS, MIN_DAILY_AMOUNT, PRICE_RANGE
-from .board import detect_board
+from config import (
+    EXCLUDE_KEYWORDS, MIN_DAILY_AMOUNT, PRICE_RANGE,
+    ETF_PRICE_RANGE, ETF_MIN_DAILY_AMOUNT,
+)
+from .board import detect_board, is_etf
 
 
 class StockScreener:
@@ -46,16 +49,22 @@ class StockScreener:
         Args:
             price_low: 最低价格 (默认 PRICE_RANGE[0])
             price_high: 最高价格 (默认 PRICE_RANGE[1])
-            board: 板块过滤，可选 "主板" / "科创板" / "创业板" / "北交所"，None 表示不过滤
+            board: 过滤类型，可选 "主板" / "科创板" / "创业板" / "北交所" / "ETF"，None 表示不过滤
 
         Returns:
             筛选后的候选股票 DataFrame
         """
-        price_low = price_low or PRICE_RANGE[0]
-        price_high = price_high or PRICE_RANGE[1]
+        # ETF 使用独立的价格区间和流动性标准
+        is_etf_mode = (board == "ETF")
+        if is_etf_mode:
+            price_low = price_low or ETF_PRICE_RANGE[0]
+            price_high = price_high or ETF_PRICE_RANGE[1]
+        else:
+            price_low = price_low or PRICE_RANGE[0]
+            price_high = price_high or PRICE_RANGE[1]
 
         logger.info(f"开始全市场扫描: 价格区间 {price_low}-{price_high}元" +
-                    (f"，板块 {board}" if board else ""))
+                    (f"，类型 {board}" if board else ""))
 
         # 使用容错数据获取
         df = self._fetch_market_data()
@@ -75,8 +84,13 @@ class StockScreener:
         if board and code_col:
             board = str(board).strip()
             before = len(df)
-            df = df[df[code_col].map(detect_board) == board]
-            stages.append(f"板块筛选({board}): {before} -> {len(df)}")
+            if is_etf_mode:
+                # ETF 模式：按 ETF 代码前缀过滤
+                df = df[df[code_col].map(is_etf)]
+                stages.append(f"ETF筛选: {before} -> {len(df)}")
+            else:
+                df = df[df[code_col].map(detect_board) == board]
+                stages.append(f"板块筛选({board}): {before} -> {len(df)}")
 
         # 步骤1: 过滤价格
         price_col = self._find_column(df, ["最新价", "current", "price"])
@@ -101,8 +115,9 @@ class StockScreener:
         if amount_col:
             df[amount_col] = pd.to_numeric(df[amount_col], errors="coerce")
             before = len(df)
-            df = df[df[amount_col] >= MIN_DAILY_AMOUNT]
-            stages.append(f"流动性筛选: {before} -> {len(df)}")
+            liquidity_min = ETF_MIN_DAILY_AMOUNT if is_etf_mode else MIN_DAILY_AMOUNT
+            df = df[df[amount_col] >= liquidity_min]
+            stages.append(f"流动性筛选(>= {liquidity_min/1e8:.1f}亿): {before} -> {len(df)}")
 
         # 步骤4: 排序 - 按成交额降序（优先选活跃股）
         if amount_col and amount_col in df.columns:

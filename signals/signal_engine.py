@@ -10,7 +10,7 @@ from typing import Optional
 import pandas as pd
 from loguru import logger
 
-from strategy import BaseStrategy, TrendStrategy, RotationStrategy
+from strategy import BaseStrategy, TrendStrategy, RotationStrategy, ETFRotationStrategy
 
 
 class Signal:
@@ -70,6 +70,7 @@ class SignalEngine:
         """注册默认策略"""
         self.register(TrendStrategy(), priority=1)
         self.register(RotationStrategy(), priority=2)
+        self.register(ETFRotationStrategy(), priority=3)
         logger.info(f"✅ 已注册 {len(self._strategies)} 个默认策略")
 
     def feed_data(self, symbol: str, kline_df: pd.DataFrame):
@@ -140,6 +141,20 @@ class SignalEngine:
             self.register(rotation, priority=2)
 
         return rotation.get_candidates()
+
+    def get_etf_candidates(self) -> pd.DataFrame:
+        """快捷方法: 获取 ETF 轮动候选列表"""
+        etf = None
+        for s in self._strategies:
+            if isinstance(s, ETFRotationStrategy):
+                etf = s
+                break
+
+        if etf is None:
+            etf = ETFRotationStrategy()
+            self.register(etf, priority=3)
+
+        return etf.get_candidates()
 
     def list_strategies(self) -> list[dict]:
         """列出所有已注册策略"""

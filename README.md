@@ -49,15 +49,18 @@ python main.py status
 一键完整运行：同步 → 筛选 → 输出统计。
 
 #### `python main.py scan -b 创业板`
-按板块扫描候选股票，可选 `主板` / `科创板` / `创业板` / `北交所`。
+按板块扫描候选股票，可选 `主板` / `科创板` / `创业板` / `北交所` / `ETF`。
 
 板块识别规则（按代码前缀）：
-| 板块 | 代码前缀 |
+| 类型 | 代码前缀 |
 |------|---------|
 | 主板 | 沪市 600/601/603/605、深市 000/001/002/003 |
 | 科创板 | 688/689 |
 | 创业板 | 300/301 |
 | 北交所 | 43x/83x/87x/88x/920 |
+| ETF | 沪市 510/511/512/513/515/516/517/518/560~563/588/589、深市 159 |
+
+ETF 使用独立的筛选参数：价格 0.5~5 元、流动性 ≥ 2000万。
 
 也可与 `trade run` 组合：`python main.py trade run -b 科创板 -t 10`
 
@@ -66,7 +69,7 @@ python main.py status
 ### 🔹 策略信号 (V0.2)
 
 #### `python main.py strategy list`
-列出所有已注册策略及其参数。
+列出所有已注册策略及其参数（趋势策略、低价轮动、ETF 轮动）。
 
 #### `python main.py strategy signal -s 000725`
 对指定股票运行趋势策略，输出技术指标和买卖信号。
@@ -81,6 +84,9 @@ python main.py status
 
 #### `python main.py strategy scan`
 全市场运行轮动策略，输出综合评分 Top 10。
+
+#### `python main.py strategy scan -b ETF`
+ETF 轮动扫描，筛选低价高流动性 ETF。
 
 ---
 
@@ -143,6 +149,9 @@ python main.py status
   📋 今日执行: 买入 1 笔 / 卖出 0 笔
 ```
 
+#### `python main.py trade run -b ETF -t 10`
+ETF 专用日运行，只筛选 ETF 品种进行交易。
+
 #### `python main.py trade status`
 查看当前虚拟账户状态、持仓明细和交易记录。
 
@@ -181,7 +190,7 @@ python main.py status
 
 ### 🔹 Web 控制台 (V0.7 → V0.8)
 
-单文件 FastAPI 网页控制台 — 通过按钮执行 15 个 CLI 命令，实时流式输出。
+单文件 FastAPI 网页控制台 — 通过按钮执行 18 个 CLI 命令，实时流式输出。
 
 ```
 # 启动（后台）
@@ -198,7 +207,7 @@ venv/bin/python web/run.py
 | `GET /api/report?date=` | 读取某天每日运行报告 |
 | `POST /api/run` | 执行命令，SSE 流式输出 `{command, symbol, board, sync}` |
 
-支持 `-b 主板/科创板/创业板/北交所` 板块过滤（scan、trade run）。
+支持 `-b 主板/科创板/创业板/北交所/ETF` 过滤（scan、trade run、daily）。
 V0.8 新增 **Live Dashboard** 区块：净值曲线（内联 SVG）、风控面板
 （regime / 仓位缩放 / 回撤 / 交易闸门）、持仓表、最近日志、最新每日报告；
 `daily` 命令带 **Sync first** 开关（先增量同步 K 线再运行）。
@@ -214,6 +223,7 @@ V0.8 新增 **Live Dashboard** 区块：净值曲线（内联 SVG）、风控面
 python main.py daily                    # 不联网同步，直接用现有数据
 python main.py daily --sync             # 先增量同步 K 线再运行
 python main.py daily -b 科创板 -t 10    # 指定板块/扫描数量
+python main.py daily -b ETF -t 10       # ETF 每日运行
 python main.py daily --show-report      # 运行后打印报告
 ```
 
@@ -285,6 +295,17 @@ python main.py backtest portfolio -s 000725,600519   # 指定标的池
    - 综合评分 Top 10
 ```
 
+### 策略C: ETF 轮动策略
+
+```
+🏆 每日全市场 ETF 扫描:
+   - 价格 0.5~5 元
+   - 近20日上涨趋势
+   - 成交活跃（≥2000万）
+   - 综合评分 Top 10
+   - 代码前缀: 沪市 510/511/512/513/515/516/517/518/560~563/588/589、深市 159
+```
+
 ---
 
 ## 🗂️ 项目结构
@@ -304,13 +325,14 @@ MiniQbot-Lite/
 │
 ├── screen/
 │   ├── stock_screener.py   # 🔍 股票筛选
-│   └── board.py            # 🧭 板块识别 (主板/科创板/创业板/北交所)
+│   └── board.py            # 🧭 板块/类型识别 (主板/科创板/创业板/北交所/ETF)
 │
 ├── strategy/               # V0.2 策略系统
 │   ├── base.py             #    BaseStrategy
 │   ├── indicators.py       #    技术指标
 │   ├── trend_strategy.py   #    📗 低风险趋势
-│   └── rotation_strategy.py # 🏆 低价轮动
+│   ├── rotation_strategy.py #   🏆 低价轮动
+│   └── etf_rotation_strategy.py # 📊 ETF 轮动
 │
 ├── signals/                # V0.2 信号引擎
 │   └── signal_engine.py
